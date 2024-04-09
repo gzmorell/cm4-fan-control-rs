@@ -2,7 +2,6 @@ use rppal::i2c::I2c;
 use std::f32::consts::PI;
 use tokio::fs;
 use tokio::signal::unix::{signal, SignalKind};
-use tokio::sync::mpsc;
 use tokio::task;
 use tokio::time::{sleep, Duration};
 use tokio_util::sync::CancellationToken;
@@ -35,8 +34,6 @@ const I2C_CMD: u8 = 0x30;
 /// Number of seconds between fan speed updates
 const UPDATE_PERIOD: u64 = 5;
 
-struct Measure(f32, u8);
-
 /// The fan percentage curve
 #[inline]
 fn fan_curve(temp: f32) -> f32 {
@@ -64,7 +61,7 @@ async fn get_cpu_temp() -> Result<f32, std::io::Error> {
 }
 
 /// Update fan speed each PERIOD seconds
-async fn fan_handle(tx: tokio::sync::mpsc::Sender<Measure>, cancel: CancellationToken) {
+async fn fan_handle(cancel: CancellationToken) {
     let mut last_speed: u8 = 0;
     let bus = task::spawn_blocking(|| I2c::with_bus(I2C_BUS))
         .await
@@ -112,7 +109,7 @@ async fn fan_handle(tx: tokio::sync::mpsc::Sender<Measure>, cancel: Cancellation
                         }
                         i2c = result.unwrap();
                         last_speed = new_speed;
-                        tx.send(Measure(temp, new_speed)).await.unwrap();
+                        println!("Cpu Temp: {temp:.2}°C, Fan Speed: {new_speed}");
                     }
                 } else {
                     eprintln!("Missing cpu temperature measure!");
@@ -131,10 +128,9 @@ async fn fan_handle(tx: tokio::sync::mpsc::Sender<Measure>, cancel: Cancellation
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut sig = signal(SignalKind::terminate())?;
-    let (tx, mut rx) = mpsc::channel(1);
     let cancel = CancellationToken::new();
     let cloned_cancel = cancel.clone();
-    let job = task::spawn(fan_handle(tx, cloned_cancel));
+    let job = task::spawn(fan_handle(cloned_cancel));
     loop {
         tokio::select! {
             _ = sig.recv() => {
@@ -145,9 +141,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ = cancel.cancelled() => {
                 eprintln!("Exit on error!");
                 break;
-            }
-            Some(Measure(temp, speed)) = rx.recv() => {
-                println!("Cpu Temp: {temp:.2}°C, Fan Speed: {speed}");
             }
         }
     }
