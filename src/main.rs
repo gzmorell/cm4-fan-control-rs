@@ -138,8 +138,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         tokio::select! {
             _ = sig.recv() => {
-                println!("Service stopped.");
                 cancel.cancel();
+                println!("Service stopped.");
                 break;
                 }
             _ = cancel.cancelled() => {
@@ -148,7 +148,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             Some(Measure(temp, speed)) = rx.recv() => {
                 println!("Cpu Temp: {temp:.2}°C, Fan Speed: {speed}");
-
             }
         }
     }
