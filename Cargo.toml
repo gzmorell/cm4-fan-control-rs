@@ -1,11 +1,14 @@
 [package]
-name = "cm4-fan-control-rs"
+name = "cm4_fan_control"
 version = "0.1.0"
+description = "Fan control for the Raspberry Pi CM4 IO board"
+readme = "README.md"
+license = "GPL-v3.0"
+license-file = "LICENSE"
+authors = ["Francisco Gonzalez"]
+repository = "https://github.com/gzmorell/cm4-fan-control-rs"
 edition = "2021"
 
-[[bin]]
-name = "cm4_fan_control"
-path = "src/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -13,3 +16,15 @@ path = "src/main.rs"
 rppal = "0.17.1"
 tokio = { version = "1.37.0", features = ["rt-multi-thread", "macros", "signal", "time", "fs", "sync"] }
 tokio-util = "0.7.10"
+
+[package.metadata.deb]
+name = "cm4_fan_control"
+section = "utility"
+priority = "optional"
+# assets = [
+#   ["target/aarch64-unknown-linux-gnu/release/cm4_fan_control", "usr/local/sbin/cm4_fan_control", "755"],
+#   ["README.md", "usr/share/cm4_fan_control/README", "644"],
+# ]
+maintainer-scripts = "debian/"
+systemd-units = { enable = true }
+
