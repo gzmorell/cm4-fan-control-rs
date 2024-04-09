@@ -128,7 +128,7 @@ async fn fan_handle(tx: tokio::sync::mpsc::Sender<Measure>, cancel: Cancellation
     }
 }
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut sig = signal(SignalKind::terminate())?;
     let (tx, mut rx) = mpsc::channel(1);
