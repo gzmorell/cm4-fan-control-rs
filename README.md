@@ -18,3 +18,19 @@ a more general approach, and do not use i2c.
 It uses the same simple fan curve as the original app, seen below.
 
 ![Graph of the fan curve](img/curve.png)
+
+## Build
+
+The expected target is aarch64-unknown-linux-gnu.
+
+To cross compile you can use cross, or cargo-zigbuild.
+
+To create a debian package after cross compilation you can use cargo-deb with the next command:
+''' bash
+> cargo deb --target="aarch64-unknown-linux-build" --no-build
+'''
+
+To compile and build the debian package on the cm4:
+''' bash
+> cargo deb --target="aarch64-unknown-linux-build" 
+'''

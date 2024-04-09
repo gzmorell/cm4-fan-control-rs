@@ -2,7 +2,7 @@
 Description=Service for Raspberry Pi CM4 IO fan control
 
 [Service]
-ExecStart=/usr/local/sbin/cm4_fan_control
+ExecStart=/usr/bin/cm4_fan_control
 Restart=on-failure
 
 [Install]
