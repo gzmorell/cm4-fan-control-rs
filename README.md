@@ -23,7 +23,12 @@ It uses the same simple fan curve as the original app, seen below.
 
 The expected target is aarch64-unknown-linux-gnu.
 
-To cross compile you can use cross, or cargo-zigbuild.
+To cross compile you can use cross, cargo-zigbuild, or setup a debian cross compilation:
+''' bash
+> sudo dpkg --add-architecture arm64
+> sudo apt-get install pkg-config build-essential crossbuild-essential-arm64
+> cargo deb --target="aarch64-unknown-linux-build" 
+'''
 
 To create a debian package after cross compilation you can use cargo-deb with the next command:
 ''' bash
