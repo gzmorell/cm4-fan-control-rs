@@ -28,3 +28,5 @@ priority = "optional"
 maintainer-scripts = "debian/"
 systemd-units = { enable = true }
 
+[profile.release]
+strip = "symbols"
