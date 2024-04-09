@@ -3,9 +3,10 @@
 A simple utility written in Rust to help control the fan speed of a Raspberry Pi CM4 IO Board using the i2c
 fan control hardware to avoid the to high CPU usage.
 
-In order to activate the fan control, I2C bus #1 must be enabled. The [PI Device Tree Documentation](https://www.raspberrypi.com/documentation/computers/configuration.html#part3.3) recomends not using this changes, as it can 
+In order to activate the fan control, I2C bus #1 and #0 must be enabled. The [PI Device Tree Documentation](https://www.raspberrypi.com/documentation/computers/configuration.html#part3.3) recomends not using this changes, as it can 
 stop the Raspberry Pi Camera or Raspberry Pi Touch Display functioning correctly. 
 
+To activate i2c for fan "config.txt" on boot must include:
 # Enable I2C.
 dtparam=i2c_arm=on
 # Enable I2C bus 0/1.
