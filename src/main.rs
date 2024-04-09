@@ -66,29 +66,51 @@ async fn get_cpu_temp() -> Result<f32, std::io::Error> {
 /// Update fan speed each PERIOD seconds
 async fn fan_handle(tx: tokio::sync::mpsc::Sender<Measure>, cancel: CancellationToken) {
     let mut last_speed: u8 = 0;
-    let bus = I2c::with_bus(I2C_BUS);
+    let bus = task::spawn_blocking(|| I2c::with_bus(I2C_BUS))
+        .await
+        .unwrap();
     if bus.is_err() {
         eprintln!("Unable to open I2c bus: {I2C_BUS}");
         cancel.cancel();
         return;
     }
     let mut i2c = bus.unwrap();
-    if i2c.set_slave_address(I2C_SLA).is_err() {
+    let i2c = task::spawn_blocking(move || {
+        if let Err(e) = i2c.set_slave_address(I2C_SLA) {
+            Err(e)
+        } else {
+            Ok(i2c)
+        }
+    })
+    .await
+    .unwrap();
+    if i2c.is_err() {
         eprintln!("Unable to set slave address {I2C_SLA} in I2c bus: {I2C_BUS}");
         cancel.cancel();
         return;
     }
+    let mut i2c = i2c.unwrap();
     loop {
         tokio::select! {
             _ = sleep(Duration::from_secs(UPDATE_PERIOD)) => {
                 if let Ok(temp) = get_cpu_temp().await {
                     let new_speed = fan_speed(temp);
                     if new_speed != last_speed {
-                        if i2c.smbus_write_byte(I2C_CMD, new_speed).is_err() {
+                        let result = task::spawn_blocking(move || {
+                            if let Err(e) = i2c.smbus_write_byte(I2C_CMD, new_speed) {
+                                Err(e)
+                            } else {
+                                Ok(i2c)
+                            }
+                        })
+                        .await
+                        .unwrap();
+                        if result.is_err() {
                             eprintln!("Unable to set fan speed on slave address {I2C_SLA} in I2c bus: {I2C_BUS}");
                             cancel.cancel();
                             return;
                         }
+                        i2c = result.unwrap();
                         last_speed = new_speed;
                         tx.send(Measure(temp, new_speed)).await.unwrap();
                     }
