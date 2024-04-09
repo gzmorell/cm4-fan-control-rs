@@ -63,53 +63,33 @@ async fn get_cpu_temp() -> Result<f32, std::io::Error> {
 /// Update fan speed each PERIOD seconds
 async fn fan_handle(cancel: CancellationToken) {
     let mut last_speed: u8 = 0;
-    let bus = task::spawn_blocking(|| I2c::with_bus(I2C_BUS))
-        .await
-        .unwrap();
+    let bus = I2c::with_bus(I2C_BUS);
     if bus.is_err() {
         eprintln!("Unable to open I2c bus: {I2C_BUS}");
         cancel.cancel();
         return;
     }
     let mut i2c = bus.unwrap();
-    let i2c = task::spawn_blocking(move || {
-        if let Err(e) = i2c.set_slave_address(I2C_SLA) {
-            Err(e)
-        } else {
-            Ok(i2c)
-        }
-    })
-    .await
-    .unwrap();
-    if i2c.is_err() {
+    let address = i2c.set_slave_address(I2C_SLA);
+    if address.is_err() {
         eprintln!("Unable to set slave address {I2C_SLA} in I2c bus: {I2C_BUS}");
         cancel.cancel();
         return;
     }
-    let mut i2c = i2c.unwrap();
     loop {
         tokio::select! {
             _ = sleep(Duration::from_secs(UPDATE_PERIOD)) => {
                 if let Ok(temp) = get_cpu_temp().await {
                     let new_speed = fan_speed(temp);
                     if new_speed != last_speed {
-                        let result = task::spawn_blocking(move || {
-                            if let Err(e) = i2c.smbus_write_byte(I2C_CMD, new_speed) {
-                                Err(e)
-                            } else {
-                                Ok(i2c)
-                            }
-                        })
-                        .await
-                        .unwrap();
-                        if result.is_err() {
+                        if i2c.smbus_write_byte(I2C_CMD, new_speed).is_err() {
                             eprintln!("Unable to set fan speed on slave address {I2C_SLA} in I2c bus: {I2C_BUS}");
                             cancel.cancel();
                             return;
+                        } else {
+                            last_speed = new_speed;
+                            println!("Cpu Temp: {temp:.2}°C, Fan Speed: {new_speed}");
                         }
-                        i2c = result.unwrap();
-                        last_speed = new_speed;
-                        println!("Cpu Temp: {temp:.2}°C, Fan Speed: {new_speed}");
                     }
                 } else {
                     eprintln!("Missing cpu temperature measure!");
