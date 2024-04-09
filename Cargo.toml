@@ -3,7 +3,6 @@ name = "cm4_fan_control"
 version = "0.1.0"
 description = "Fan control for the Raspberry Pi CM4 IO board"
 readme = "README.md"
-license = "GPL-v3.0"
 license-file = "LICENSE"
 authors = ["Francisco Gonzalez"]
 repository = "https://github.com/gzmorell/cm4-fan-control-rs"
