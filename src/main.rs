@@ -2,7 +2,7 @@ use rppal::i2c::I2c;
 use std::f32::consts::PI;
 use tokio::fs;
 use tokio::signal::unix::{signal, SignalKind};
-use tokio::task;
+// use tokio::task;
 use tokio::time::{sleep, Duration};
 use tokio_util::sync::CancellationToken;
 
@@ -66,14 +66,12 @@ async fn fan_handle(cancel: CancellationToken) {
     let bus = I2c::with_bus(I2C_BUS);
     if bus.is_err() {
         eprintln!("Unable to open I2c bus: {I2C_BUS}");
-        cancel.cancel();
         return;
     }
     let mut i2c = bus.unwrap();
     let address = i2c.set_slave_address(I2C_SLA);
     if address.is_err() {
         eprintln!("Unable to set slave address {I2C_SLA} in I2c bus: {I2C_BUS}");
-        cancel.cancel();
         return;
     }
     loop {
@@ -84,8 +82,7 @@ async fn fan_handle(cancel: CancellationToken) {
                     if new_speed != last_speed {
                         if i2c.smbus_write_byte(I2C_CMD, new_speed).is_err() {
                             eprintln!("Unable to set fan speed on slave address {I2C_SLA} in I2c bus: {I2C_BUS}");
-                            cancel.cancel();
-                            return;
+                            break;
                         } else {
                             last_speed = new_speed;
                             println!("Cpu Temp: {temp:.2}°C, Fan Speed: {new_speed}");
@@ -93,7 +90,6 @@ async fn fan_handle(cancel: CancellationToken) {
                     }
                 } else {
                     eprintln!("Missing cpu temperature measure!");
-                    cancel.cancel();
                     break;
                 }
             }
@@ -110,20 +106,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut sig = signal(SignalKind::terminate())?;
     let cancel = CancellationToken::new();
     let cloned_cancel = cancel.clone();
-    let job = task::spawn(fan_handle(cloned_cancel));
+    let mut fut = std::pin::pin!(fan_handle(cloned_cancel));
     loop {
         tokio::select! {
             _ = sig.recv() => {
                 cancel.cancel();
-                println!("Service stopped.");
-                break;
                 }
-            _ = cancel.cancelled() => {
-                eprintln!("Exit on error!");
+            _ = &mut fut => {
+                println!("Service stopped.");
                 break;
             }
         }
     }
-    job.await.unwrap();
     Ok(())
 }
