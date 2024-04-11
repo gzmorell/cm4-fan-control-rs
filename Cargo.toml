@@ -1,6 +1,6 @@
 [package]
 name = "cm4_fan_control"
-version = "0.2.0"
+version = "0.3.0"
 description = "Fan control for the Raspberry Pi CM4 IO board"
 readme = "README.md"
 license-file = "LICENSE"
