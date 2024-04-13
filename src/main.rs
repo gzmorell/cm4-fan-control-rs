@@ -101,18 +101,18 @@ async fn fan_handle(cancel: CancellationToken) {
     }
 }
 
-#[tokio::main(flavor = "current_thread")]
+#[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut sig = signal(SignalKind::terminate())?;
     let cancel = CancellationToken::new();
     let cloned_cancel = cancel.clone();
-    let mut fut = std::pin::pin!(fan_handle(cloned_cancel));
+    let mut job = tokio::spawn(fan_handle(cloned_cancel));
     loop {
         tokio::select! {
             _ = sig.recv() => {
                 cancel.cancel();
                 }
-            _ = &mut fut => {
+            _ = &mut job => {
                 println!("Service stopped.");
                 break;
             }
