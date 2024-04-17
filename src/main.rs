@@ -62,7 +62,7 @@ async fn get_cpu_temp() -> Result<f32, std::io::Error> {
 
 /// Update fan speed each PERIOD seconds
 async fn fan_handle(cancel: CancellationToken) {
-    let mut last_speed: u8 = 0;
+    let mut last_speed: u8 = 255;
     let bus = I2c::with_bus(I2C_BUS);
     if bus.is_err() {
         eprintln!("Unable to open I2c bus: {I2C_BUS}");
